@@ -13,6 +13,5 @@ namespace MimicAPI.Models
         public bool Ativo { get; set; }
         public DateTime Criado { get; set; }
         public DateTime? Atualizado { get; set; }
-
     }
 }
