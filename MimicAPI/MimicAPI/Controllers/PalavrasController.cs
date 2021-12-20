@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MimicAPI.Data;
+using MimicAPI.Helpers;
 using MimicAPI.Models;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -32,7 +34,20 @@ namespace MimicAPI.Controllers
 
             if(numPagina.HasValue)
             {
+                Paginacao paginacao = new Paginacao();
+                int qtdTotalRegistros = item.Count();
+
                 item = item.Skip((numPagina.Value - 1) * qtdRegistros.Value).Take(qtdRegistros.Value);
+
+                paginacao.NumeroPagina = numPagina.Value;
+                paginacao.RegistroPagina = qtdRegistros.Value;
+                paginacao.TotalRegistros = qtdTotalRegistros;
+                paginacao.TotalPaginas = (int)Math.Ceiling((double)paginacao.TotalRegistros / paginacao.RegistroPagina);
+
+                Response.Headers.Add("X-Pagination", JsonConvert.SerializeObject( paginacao ));
+
+                if (numPagina > paginacao.TotalPaginas)
+                    return NotFound();
             }
 
             return Ok(item);
