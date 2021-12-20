@@ -23,30 +23,30 @@ namespace MimicAPI.Controllers
 
         [Route("")]
         [HttpGet]
-        public ActionResult ObterTodas(DateTime? data, int? numPagina, int? qtdRegistros)
+        public ActionResult ObterTodas([FromQuery] PalavraUrlQuery query)
         {
             var item = _banco.Palavras.AsQueryable();
 
-            if(data.HasValue)
+            if(query.Data.HasValue)
             {
-                item = item.Where(a => a.Criado > data.Value || a.Atualizado > data.Value);
+                item = item.Where(a => a.Criado > query.Data.Value || a.Atualizado > query.Data.Value);
             }
 
-            if(numPagina.HasValue)
+            if(query.NumPagina.HasValue)
             {
                 Paginacao paginacao = new Paginacao();
                 int qtdTotalRegistros = item.Count();
 
-                item = item.Skip((numPagina.Value - 1) * qtdRegistros.Value).Take(qtdRegistros.Value);
+                item = item.Skip((query.NumPagina.Value - 1) * query.QtdRegistros.Value).Take(query.QtdRegistros.Value);
 
-                paginacao.NumeroPagina = numPagina.Value;
-                paginacao.RegistroPagina = qtdRegistros.Value;
+                paginacao.NumeroPagina = query.NumPagina.Value;
+                paginacao.RegistroPagina = query.QtdRegistros.Value;
                 paginacao.TotalRegistros = qtdTotalRegistros;
                 paginacao.TotalPaginas = (int)Math.Ceiling((double)paginacao.TotalRegistros / paginacao.RegistroPagina);
 
                 Response.Headers.Add("X-Pagination", JsonConvert.SerializeObject( paginacao ));
 
-                if (numPagina > paginacao.TotalPaginas)
+                if (query.NumPagina > paginacao.TotalPaginas)
                     return NotFound();
             }
 
