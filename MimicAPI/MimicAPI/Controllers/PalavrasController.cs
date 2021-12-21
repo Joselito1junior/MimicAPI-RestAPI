@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MimicAPI.Data;
 using MimicAPI.Helpers;
 using MimicAPI.Models;
+using MimicAPI.Repositories.Contracts;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -14,63 +14,44 @@ namespace MimicAPI.Controllers
     [Route("api/palavras")]
     public class PalavrasController : ControllerBase
     {
-        private readonly MimicContext _banco;
+        private readonly IPalavraRepository _repository;
 
-        public PalavrasController(MimicContext banco)
+        public PalavrasController(IPalavraRepository repository)
         {
-            _banco = banco;
+            _repository = repository;
         }
 
         [Route("")]
         [HttpGet]
         public ActionResult ObterTodas([FromQuery] PalavraUrlQuery query)
         {
-            var item = _banco.Palavras.AsQueryable();
+            var item = _repository.ObterPalavras(query);
 
-            if(query.Data.HasValue)
-            {
-                item = item.Where(a => a.Criado > query.Data.Value || a.Atualizado > query.Data.Value);
-            }
+            if (query.NumPagina > item.Paginacao.TotalPaginas)
+                return NotFound();
 
-            if(query.NumPagina.HasValue)
-            {
-                Paginacao paginacao = new Paginacao();
-                int qtdTotalRegistros = item.Count();
+            Response.Headers.Add("X-Pagination", JsonConvert.SerializeObject(item.Paginacao));
 
-                item = item.Skip((query.NumPagina.Value - 1) * query.QtdRegistros.Value).Take(query.QtdRegistros.Value);
-
-                paginacao.NumeroPagina = query.NumPagina.Value;
-                paginacao.RegistroPagina = query.QtdRegistros.Value;
-                paginacao.TotalRegistros = qtdTotalRegistros;
-                paginacao.TotalPaginas = (int)Math.Ceiling((double)paginacao.TotalRegistros / paginacao.RegistroPagina);
-
-                Response.Headers.Add("X-Pagination", JsonConvert.SerializeObject( paginacao ));
-
-                if (query.NumPagina > paginacao.TotalPaginas)
-                    return NotFound();
-            }
-
-            return Ok(item);
+            return Ok(item.ToList());
         }
 
         [Route("{id}")]
         [HttpGet]
         public ActionResult Obter(int id)
         {
-            Palavras obj = _banco.Palavras.Find(id);
+            Palavras obj = _repository.Obter(id);
 
             if (obj == null)
                 return StatusCode(404);
 
-            return Ok();
+            return Ok(obj);
         }
 
         [Route("")]
         [HttpPost]
         public ActionResult Cadastrar([FromBody] Palavras palavra)
         {
-            _banco.Palavras.Add(palavra);
-            _banco.SaveChanges();
+            _repository.Cadastrar(palavra);
             return Created($"/ApiBehaviorOptions/Palavras/{palavra.Id}", palavra);
         }
 
@@ -78,14 +59,14 @@ namespace MimicAPI.Controllers
         [HttpPut]
         public ActionResult Atualizar(int id, [FromBody] Palavras palavra)
         {
-            Palavras obj = _banco.Palavras.AsNoTracking().FirstOrDefault(a => a.Id == id);
+            var obj = _repository.Obter(id);
 
             if (obj == null)
                 return StatusCode(404);
 
             palavra.Id = id;
-            _banco.Palavras.Update(palavra);
-            _banco.SaveChanges();
+            _repository.Atualizar(palavra);
+
             return Ok();
         }
 
@@ -93,15 +74,13 @@ namespace MimicAPI.Controllers
         [HttpDelete]
         public ActionResult Deletar(int id)
         {
-            Palavras palavra = _banco.Palavras.Find(id);
+            Palavras palavra = _repository.Obter(id);
 
             if (palavra == null)
                 return StatusCode(404);
 
-            palavra.Ativo = false;
-            _banco.Palavras.Update(palavra);
-            _banco.SaveChanges();
-            
+            _repository.Deletar(id);
+
             return StatusCode(204);
         }
     }
