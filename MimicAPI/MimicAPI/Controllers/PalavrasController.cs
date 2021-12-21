@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MimicAPI.Helpers;
 using MimicAPI.Models;
+using MimicAPI.Models.DTO;
 using MimicAPI.Repositories.Contracts;
 using Newtonsoft.Json;
 using System;
@@ -15,10 +17,12 @@ namespace MimicAPI.Controllers
     public class PalavrasController : ControllerBase
     {
         private readonly IPalavraRepository _repository;
+        private readonly IMapper _mapper;
 
-        public PalavrasController(IPalavraRepository repository)
+        public PalavrasController(IPalavraRepository repository, IMapper mapper)
         {
             _repository = repository;
+            _mapper = mapper;
         }
 
         [Route("")]
@@ -35,8 +39,8 @@ namespace MimicAPI.Controllers
             return Ok(item.ToList());
         }
 
-        [Route("{id}")]
-        [HttpGet]
+
+        [HttpGet("{id}", Name = "Obter")]
         public ActionResult Obter(int id)
         {
             Palavras obj = _repository.Obter(id);
@@ -44,7 +48,22 @@ namespace MimicAPI.Controllers
             if (obj == null)
                 return StatusCode(404);
 
-            return Ok(obj);
+            PalavraDTO palavraDTO = _mapper.Map<Palavras, PalavraDTO>(obj);
+            palavraDTO.Links = new List<LinkDTO>();
+
+            palavraDTO.Links.Add(
+                new LinkDTO("self", Url.Link("Obter", new { id = palavraDTO.Id }), "GET")
+            );
+
+            palavraDTO.Links.Add(
+                new LinkDTO("Update", Url.Link("Update", new { id = palavraDTO.Id }), "PUT")
+            );
+
+            palavraDTO.Links.Add(
+                new LinkDTO("Excluir", Url.Link("Excluir", new { id = palavraDTO.Id }), "DELETE")
+            );
+
+            return Ok(palavraDTO);
         }
 
         [Route("")]
@@ -55,8 +74,8 @@ namespace MimicAPI.Controllers
             return Created($"/ApiBehaviorOptions/Palavras/{palavra.Id}", palavra);
         }
 
-        [Route("{id}")]
-        [HttpPut]
+
+        [HttpPut("{id}", Name = "Update")]
         public ActionResult Atualizar(int id, [FromBody] Palavras palavra)
         {
             var obj = _repository.Obter(id);
@@ -70,8 +89,7 @@ namespace MimicAPI.Controllers
             return Ok();
         }
 
-        [Route("{id}")]
-        [HttpDelete]
+        [HttpDelete("{id}", Name = "Excluir")]
         public ActionResult Deletar(int id)
         {
             Palavras palavra = _repository.Obter(id);

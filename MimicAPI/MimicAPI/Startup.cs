@@ -13,6 +13,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using MimicAPI.Repositories;
 using MimicAPI.Repositories.Contracts;
+using AutoMapper;
+using MimicAPI.Helpers;
 
 namespace MimicAPI
 {
@@ -34,6 +36,14 @@ namespace MimicAPI
                 options.CheckConsentNeeded = context => true;
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
+
+            var config = new MapperConfiguration(cfg =>
+            {
+                cfg.AddProfile(new DTOMapperProfile());
+            });
+
+            IMapper mapper = config.CreateMapper();
+            services.AddSingleton(mapper);
 
             services.AddDbContext<MimicContext>(opt => {
                 opt.UseSqlite("Data Source=Data\\Mimic.db");
