@@ -1,10 +1,7 @@
 ﻿using AutoMapper;
 using MimicAPI.Models;
 using MimicAPI.Models.DTO;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+
 
 namespace MimicAPI.Helpers
 {
@@ -13,6 +10,7 @@ namespace MimicAPI.Helpers
         public DTOMapperProfile()
         {
             CreateMap<Palavras, PalavraDTO>();
+            CreateMap<PaginacaoList<Palavras>, PaginacaoList<PalavraDTO>>();
         }
     }
 }

@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using MimicAPI.Helpers;
 using MimicAPI.Models;
 using MimicAPI.Models.DTO;
@@ -8,9 +7,8 @@ using MimicAPI.Repositories.Contracts;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
+ 
 namespace MimicAPI.Controllers
 {
     [Route("api/palavras")]
@@ -25,20 +23,52 @@ namespace MimicAPI.Controllers
             _mapper = mapper;
         }
 
-        [Route("")]
-        [HttpGet]
+        [HttpGet("", Name = "ObterTodas")]
         public ActionResult ObterTodas([FromQuery] PalavraUrlQuery query)
         {
             var item = _repository.ObterPalavras(query);
 
-            if (query.NumPagina > item.Paginacao.TotalPaginas)
+            if (item.Results.Count == 0)
                 return NotFound();
 
-            Response.Headers.Add("X-Pagination", JsonConvert.SerializeObject(item.Paginacao));
+            //if(item.Paginacao != null)
+            //    Response.Headers.Add("X-Pagination", JsonConvert.SerializeObject(item.Paginacao));
 
-            return Ok(item.ToList());
+            PaginacaoList<PalavraDTO> lista = CriarlinksListPalavraDTO(query, item);
+            return Ok(lista);
         }
 
+        private PaginacaoList<PalavraDTO> CriarlinksListPalavraDTO(PalavraUrlQuery query, PaginacaoList<Palavras> item)
+        {
+            var lista = _mapper.Map<PaginacaoList<Palavras>, PaginacaoList<PalavraDTO>>(item);
+
+            foreach (var palavra in lista.Results)
+            {
+                palavra.Links = new List<LinkDTO>();
+                palavra.Links.Add(new LinkDTO("self", Url.Link("ObterTodas", new { id = palavra.Id }), "GET"));
+            }
+
+            lista.Link.Add(new LinkDTO("self", Url.Link("ObterTodas", query), "GET"));
+
+            if (item.Paginacao != null)
+            {
+                Response.Headers.Add("X-Pagination", JsonConvert.SerializeObject(item.Paginacao));
+
+                if (query.NumPagina + 1 <= item.Paginacao.TotalPaginas)
+                {
+                    var queryString = new PalavraUrlQuery() { NumPagina = query.NumPagina + 1, QtdRegistros = query.QtdRegistros, Data = query.Data };
+                    lista.Link.Add(new LinkDTO("next", Url.Link("ObterTodas", queryString), "GET"));
+                }
+
+                if (query.NumPagina - 1 > 0)
+                {
+                    var queryString = new PalavraUrlQuery() { NumPagina = query.NumPagina - 1, QtdRegistros = query.QtdRegistros, Data = query.Data };
+                    lista.Link.Add(new LinkDTO("prev", Url.Link("ObterTodas", queryString), "GET"));
+                }
+            }
+
+            return lista;
+        }
 
         [HttpGet("{id}", Name = "Obter")]
         public ActionResult Obter(int id)
@@ -49,6 +79,7 @@ namespace MimicAPI.Controllers
                 return StatusCode(404);
 
             PalavraDTO palavraDTO = _mapper.Map<Palavras, PalavraDTO>(obj);
+
             palavraDTO.Links = new List<LinkDTO>();
 
             palavraDTO.Links.Add(

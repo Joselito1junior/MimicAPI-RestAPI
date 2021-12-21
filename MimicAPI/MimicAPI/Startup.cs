@@ -7,10 +7,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MimicAPI.Data;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using MimicAPI.Repositories;
 using MimicAPI.Repositories.Contracts;
 using AutoMapper;
@@ -48,6 +44,7 @@ namespace MimicAPI
             services.AddDbContext<MimicContext>(opt => {
                 opt.UseSqlite("Data Source=Data\\Mimic.db");
             });
+
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
             services.AddScoped<IPalavraRepository, PalavraRepository>();
         }

@@ -4,9 +4,8 @@ using MimicAPI.Helpers;
 using MimicAPI.Models;
 using MimicAPI.Repositories.Contracts;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
+
 
 namespace MimicAPI.Repositories
 {
@@ -46,7 +45,7 @@ namespace MimicAPI.Repositories
                 lista.Paginacao = paginacao;
             }
 
-            lista.AddRange(item.ToList());
+            lista.Results.AddRange(item.ToList());
 
             return lista;
         }
